@@ -1,0 +1,13 @@
+{
+  "name": "study-planner-seed",
+  "version": "1.0.0",
+  "description": "Seed script for Study Planner demo data (Firebase Admin SDK)",
+  "main": "seed.js",
+  "type": "module",
+  "scripts": {
+    "seed": "node seed.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}

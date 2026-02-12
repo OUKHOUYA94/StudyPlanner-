@@ -44,12 +44,9 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase config (contains project keys)
-/lib/app/firebase_options.dart
-/android/app/google-services.json
-
-# Node modules (Cloud Functions)
+# Node modules
 /functions/node_modules/
+/seed/node_modules/
 
 # Flutter generated
 .flutter-plugins

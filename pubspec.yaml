@@ -1,0 +1,55 @@
+name: study_planner
+description: "Study Planner - School management app for students and teachers."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.6.0
+  cloud_firestore: ^5.6.0
+  firebase_storage: ^12.4.0
+  firebase_messaging: ^15.2.0
+
+  # QR
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.0.0
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Routing
+  go_router: ^14.8.0
+
+  # UI
+  cupertino_icons: ^1.0.8
+  image_picker: ^1.1.2
+
+  # Notifications
+  flutter_local_notifications: ^18.0.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/logo.png"
+  adaptive_icon_background: "#10437A"
+  adaptive_icon_foreground: "assets/images/logo.png"
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/logo.png

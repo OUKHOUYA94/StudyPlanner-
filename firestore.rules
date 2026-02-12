@@ -1,0 +1,188 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────────────
+
+    /// Authenticated user id.
+    function uid() {
+      return request.auth.uid;
+    }
+
+    /// Whether the caller is authenticated.
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    /// Read the caller's user document.
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(uid())).data;
+    }
+
+    /// Caller role.
+    function userRole() {
+      return userDoc().role;
+    }
+
+    /// Whether the caller is a student.
+    function isStudent() {
+      return isAuth() && userRole() == 'student';
+    }
+
+    /// Whether the caller is a teacher.
+    function isTeacher() {
+      return isAuth() && userRole() == 'teacher';
+    }
+
+    /// Whether the student belongs to the given class.
+    function studentInClass(classId) {
+      return isStudent() && userDoc().classId == classId;
+    }
+
+    /// Whether the teacher is assigned to the given class.
+    function teacherInClass(classId) {
+      return isTeacher() && classId in userDoc().teacherClassIds;
+    }
+
+    /// Whether the caller is a member of the given class (student or teacher).
+    /// Uses the members subcollection directly — more reliable than
+    /// checking user-document fields (avoids get() + field-access chains).
+    function memberOfClass(classId) {
+      return exists(/databases/$(database)/documents/classes/$(classId)/members/$(uid()));
+    }
+
+    /// Whether the caller is a teacher-member in the given class.
+    function isTeacherMember(classId) {
+      return get(/databases/$(database)/documents/classes/$(classId)/members/$(uid())).data.role == 'teacher';
+    }
+
+    /// Get an attendance session document.
+    function sessionDoc(classId, sessionId) {
+      return get(/databases/$(database)/documents/classes/$(classId)/attendanceSessions/$(sessionId)).data;
+    }
+
+    /// Whether the teacher teaches the given subject in the given class.
+    function teachesSubject(classId, subjectId) {
+      return isTeacher()
+        && get(/databases/$(database)/documents/classes/$(classId)/subjects/$(subjectId)).data.teacherUid == uid();
+    }
+
+    // ── /users/{userId} ───────────────────────────────────────────
+
+    match /users/{userId} {
+      // Any authenticated user can read profiles (needed for teacher→student
+      // lists, student→teacher names, chat sender names, etc.).
+      allow read: if isAuth();
+
+      // Users can update only editable fields (photoURL, email).
+      // Immutable fields (role, fullName, personalNumber, classId,
+      // teacherClassIds, createdAt) must not change.
+      allow update: if isAuth()
+        && uid() == userId
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.fullName == resource.data.fullName
+        && request.resource.data.personalNumber == resource.data.personalNumber
+        && request.resource.data.classId == resource.data.classId
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      // No client create or delete.
+      allow create, delete: if false;
+
+      // ── devices subcollection (FCM tokens) ──
+      match /devices/{deviceId} {
+        // Users can read/write their own device tokens.
+        allow read, write: if isAuth() && uid() == userId;
+      }
+    }
+
+    // ── /classes/{classId} ────────────────────────────────────────
+
+    match /classes/{classId} {
+      // Members of the class can read the class document.
+      allow read: if isAuth() && memberOfClass(classId);
+
+      // No client write.
+      allow write: if false;
+
+      // ── members subcollection ──
+      match /members/{memberId} {
+        allow read: if isAuth() && memberOfClass(classId);
+        allow write: if false;
+      }
+
+      // ── subjects (6 per class) ──
+      match /subjects/{subjectId} {
+        allow read: if isAuth() && memberOfClass(classId);
+        allow write: if false;
+      }
+
+      // ── timetableSlots ──
+      // Read: class members. Create/update: teachers of the class.
+      match /timetableSlots/{slotId} {
+        allow read: if isAuth() && memberOfClass(classId);
+        allow create: if isAuth() && isTeacherMember(classId);
+        allow update: if isAuth() && isTeacherMember(classId);
+        allow delete: if false;
+      }
+
+      // ── assessments ──
+      // Read: class members. Create/update: teachers of the class.
+      match /assessments/{assessmentId} {
+        allow read: if isAuth() && memberOfClass(classId);
+        allow create: if isAuth() && isTeacherMember(classId);
+        allow update: if isAuth() && isTeacherMember(classId);
+        allow delete: if false;
+      }
+
+      // ── attendanceSessions ──
+      // Read: teachers only (session contains plain token).
+      // Create: teachers of the class.
+      match /attendanceSessions/{sessionId} {
+        allow read: if isAuth() && isTeacherMember(classId);
+        allow create: if isAuth()
+          && isTeacherMember(classId)
+          && request.resource.data.teacherUid == uid();
+        allow update, delete: if false;
+
+        // ── attendance records ──
+        // Read: class members. Create: students with correct token + not expired.
+        match /records/{studentUid} {
+          allow read: if isAuth() && memberOfClass(classId);
+          allow create: if isAuth()
+            && uid() == studentUid
+            && memberOfClass(classId)
+            && request.resource.data.token == sessionDoc(classId, sessionId).token
+            && request.time < sessionDoc(classId, sessionId).expiresAt;
+          allow update, delete: if false;
+        }
+      }
+
+      // ── classChat ──
+      // Students only – teachers do not participate in class chat.
+      match /classChat/{messageId} {
+        allow read: if isAuth() && studentInClass(classId);
+
+        allow create: if isAuth()
+          && studentInClass(classId)
+          && request.resource.data.senderUid == uid();
+
+        allow update, delete: if false;
+      }
+
+      // ── subjectChats/{subjectId}/messages ──
+      // Read/create: students in the class OR the teacher who teaches this subject.
+      // Other teachers assigned to the class cannot access subject chats they don't teach.
+      match /subjectChats/{subjectId}/messages/{messageId} {
+        allow read: if isAuth()
+          && (studentInClass(classId) || teachesSubject(classId, subjectId));
+
+        allow create: if isAuth()
+          && (studentInClass(classId) || teachesSubject(classId, subjectId))
+          && request.resource.data.senderUid == uid();
+
+        allow update, delete: if false;
+      }
+    }
+  }
+}

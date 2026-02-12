@@ -1,0 +1,55 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "assessments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "dateTime", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "assessments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subjectId", "order": "ASCENDING" },
+        { "fieldPath": "dateTime", "order": "ASCENDING" }
+      ]
+    },
+{
+      "collectionGroup": "timetableSlots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "dayOfWeek", "order": "ASCENDING" },
+        { "fieldPath": "startMinute", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "subjects",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "teacherUid", "order": "ASCENDING" },
+        { "fieldPath": "name", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "timetableSlots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "subjectId", "order": "ASCENDING" },
+        { "fieldPath": "dayOfWeek", "order": "ASCENDING" },
+        { "fieldPath": "startMinute", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "timetableSlots",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "dayOfWeek", "order": "ASCENDING" },
+        { "fieldPath": "teacherUid", "order": "ASCENDING" },
+        { "fieldPath": "startMinute", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

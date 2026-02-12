@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "studyplanner-dev-emg",
+    "production": "study-planner-prod"
+  }
+}

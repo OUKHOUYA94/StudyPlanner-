@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(findstr:*)",
+      "Bash(more:*)",
+      "Bash(flutter build:*)",
+      "Bash(flutter devices:*)",
+      "Bash(dart run:*)"
+    ]
+  }
+}
